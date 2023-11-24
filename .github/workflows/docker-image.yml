@@ -22,6 +22,6 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           push: true
-          tags: matrixorigin/chaos-go-runner:${{ github.ref_name }},matrixorigin/chaos-go-runner:latest
+          tags: kbfu/chaos-go-runner:${{ github.ref_name }},kbfu/chaos-go-runner:latest
           platforms: linux/amd64
           file: ./build/Dockerfile
