@@ -37,13 +37,14 @@ func PodDelete(clients clients.ClientSets) {
 	// Initialize Chaos Result Parameters
 	types.SetResultAttributes(&resultDetails, chaosDetails)
 
-	if experimentsDetails.EngineName != "" {
-		// Initialize the probe details. Bail out upon error, as we haven't entered exp business logic yet
-		if err := probe.InitializeProbesInChaosResultDetails(&chaosDetails, clients, &resultDetails); err != nil {
-			log.Errorf("Unable to initialize the probes, err: %v", err)
-			return
-		}
-	}
+	// i don't need it here
+	//if experimentsDetails.EngineName != "" {
+	//	// Initialize the probe details. Bail out upon error, as we haven't entered exp business logic yet
+	//	if err := probe.InitializeProbesInChaosResultDetails(&chaosDetails, clients, &resultDetails); err != nil {
+	//		log.Errorf("Unable to initialize the probes, err: %v", err)
+	//		return
+	//	}
+	//}
 
 	//Updating the chaos result in the beginning of experiment
 	log.Infof("[PreReq]: Updating the chaos result of %v experiment (SOT)", experimentsDetails.ExperimentName)
