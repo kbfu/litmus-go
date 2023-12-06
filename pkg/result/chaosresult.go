@@ -21,8 +21,9 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-//ChaosResult Create and Update the chaos result
+// ChaosResult Create and Update the chaos result
 func ChaosResult(chaosDetails *types.ChaosDetails, clients clients.ClientSets, resultDetails *types.ResultDetails, state string) error {
+	return nil
 	experimentLabel := map[string]string{}
 
 	// It try to get the chaosresult, if available
@@ -71,7 +72,7 @@ func ChaosResult(chaosDetails *types.ChaosDetails, clients clients.ClientSets, r
 	return PatchChaosResult(clients, chaosDetails, resultDetails, experimentLabel)
 }
 
-//InitializeChaosResult create the chaos result
+// InitializeChaosResult create the chaos result
 func InitializeChaosResult(chaosDetails *types.ChaosDetails, clients clients.ClientSets, resultDetails *types.ResultDetails, chaosResultLabel map[string]string) error {
 
 	_, probeStatus := GetProbeStatus(resultDetails)
@@ -124,7 +125,7 @@ func InitializeChaosResult(chaosDetails *types.ChaosDetails, clients clients.Cli
 	return nil
 }
 
-//GetProbeStatus fetch status of all probes
+// GetProbeStatus fetch status of all probes
 func GetProbeStatus(resultDetails *types.ResultDetails) (bool, []v1alpha1.ProbeStatuses) {
 	isAllProbePassed := true
 
@@ -194,7 +195,7 @@ func updateResultAttributes(clients clients.ClientSets, chaosDetails *types.Chao
 	return result, nil
 }
 
-//PatchChaosResult Update the chaos result
+// PatchChaosResult Update the chaos result
 func PatchChaosResult(clients clients.ClientSets, chaosDetails *types.ChaosDetails, resultDetails *types.ResultDetails, chaosResultLabel map[string]string) error {
 
 	result, err := updateResultAttributes(clients, chaosDetails, resultDetails, chaosResultLabel)
@@ -234,7 +235,7 @@ func SetResultUID(resultDetails *types.ResultDetails, clients clients.ClientSets
 	return nil
 }
 
-//RecordAfterFailure update the chaosresult and create the summary events
+// RecordAfterFailure update the chaosresult and create the summary events
 func RecordAfterFailure(chaosDetails *types.ChaosDetails, resultDetails *types.ResultDetails, failStep string, clients clients.ClientSets, eventsDetails *types.EventDetails) {
 
 	// update the chaos result

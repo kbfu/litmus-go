@@ -37,22 +37,22 @@ func PodDelete(clients clients.ClientSets) {
 	// Initialize Chaos Result Parameters
 	types.SetResultAttributes(&resultDetails, chaosDetails)
 
-	//if experimentsDetails.EngineName != "" {
-	//	// Initialize the probe details. Bail out upon error, as we haven't entered exp business logic yet
-	//	if err := probe.InitializeProbesInChaosResultDetails(&chaosDetails, clients, &resultDetails); err != nil {
-	//		log.Errorf("Unable to initialize the probes, err: %v", err)
-	//		return
-	//	}
-	//}
+	if experimentsDetails.EngineName != "" {
+		// Initialize the probe details. Bail out upon error, as we haven't entered exp business logic yet
+		if err := probe.InitializeProbesInChaosResultDetails(&chaosDetails, clients, &resultDetails); err != nil {
+			log.Errorf("Unable to initialize the probes, err: %v", err)
+			return
+		}
+	}
 
 	//Updating the chaos result in the beginning of experiment
-	//log.Infof("[PreReq]: Updating the chaos result of %v experiment (SOT)", experimentsDetails.ExperimentName)
-	//if err := result.ChaosResult(&chaosDetails, clients, &resultDetails, "SOT"); err != nil {
-	//	log.Errorf("Unable to Create the Chaos Result, err: %v", err)
-	//	failStep := "[pre-chaos]: Failed to update the chaos result of pod-delete experiment (SOT), err: " + err.Error()
-	//	result.RecordAfterFailure(&chaosDetails, &resultDetails, failStep, clients, &eventsDetails)
-	//	return
-	//}
+	log.Infof("[PreReq]: Updating the chaos result of %v experiment (SOT)", experimentsDetails.ExperimentName)
+	if err := result.ChaosResult(&chaosDetails, clients, &resultDetails, "SOT"); err != nil {
+		log.Errorf("Unable to Create the Chaos Result, err: %v", err)
+		failStep := "[pre-chaos]: Failed to update the chaos result of pod-delete experiment (SOT), err: " + err.Error()
+		result.RecordAfterFailure(&chaosDetails, &resultDetails, failStep, clients, &eventsDetails)
+		return
+	}
 
 	// Set the chaos result uid
 	result.SetResultUID(&resultDetails, clients, &chaosDetails)

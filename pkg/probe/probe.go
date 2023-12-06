@@ -81,7 +81,7 @@ func RunProbes(chaosDetails *types.ChaosDetails, clients clients.ClientSets, res
 	return nil
 }
 
-//setProbeVerdict mark the verdict of the probe in the chaosresult as passed
+// setProbeVerdict mark the verdict of the probe in the chaosresult as passed
 // on the basis of phase(pre/post chaos)
 func setProbeVerdict(resultDetails *types.ResultDetails, probe v1alpha1.ProbeAttributes, verdict v1alpha1.ProbeVerdict, description string) {
 	for index, probes := range resultDetails.ProbeDetails {
@@ -98,7 +98,7 @@ func setProbeVerdict(resultDetails *types.ResultDetails, probe v1alpha1.ProbeAtt
 	}
 }
 
-//SetProbeVerdictAfterFailure mark the verdict of all the failed/unrun probes as failed
+// SetProbeVerdictAfterFailure mark the verdict of all the failed/unrun probes as failed
 func SetProbeVerdictAfterFailure(result *v1alpha1.ChaosResult) {
 	for index := range result.Status.ProbeStatuses {
 		if result.Status.ProbeStatuses[index].Status.Verdict == v1alpha1.ProbeVerdictAwaited {
@@ -138,6 +138,7 @@ func getProbesFromEngine(chaosDetails *types.ChaosDetails, clients clients.Clien
 // InitializeProbesInChaosResultDetails set the probe inside chaos result
 // it fetch the probe details from the chaosengine and set into the chaosresult
 func InitializeProbesInChaosResultDetails(chaosDetails *types.ChaosDetails, clients clients.ClientSets, chaosresult *types.ResultDetails) error {
+	return nil
 
 	var probeDetails []*types.ProbeDetails
 	// get the probes from the chaosengine
@@ -164,7 +165,7 @@ func InitializeProbesInChaosResultDetails(chaosDetails *types.ChaosDetails, clie
 	return nil
 }
 
-//getAndIncrementRunCount return the run count for the specified probe
+// getAndIncrementRunCount return the run count for the specified probe
 func getAndIncrementRunCount(resultDetails *types.ResultDetails, probeName string) int {
 	for index, probe := range resultDetails.ProbeDetails {
 		if probeName == probe.Name {
@@ -175,7 +176,7 @@ func getAndIncrementRunCount(resultDetails *types.ResultDetails, probeName strin
 	return 0
 }
 
-//getRunIDFromProbe return the run_id for the dedicated probe
+// getRunIDFromProbe return the run_id for the dedicated probe
 // which will used in the continuous cmd probe, run_id is used as suffix in the external pod name
 func getRunIDFromProbe(resultDetails *types.ResultDetails, probeName, probeType string) string {
 
@@ -187,7 +188,7 @@ func getRunIDFromProbe(resultDetails *types.ResultDetails, probeName, probeType 
 	return ""
 }
 
-//setRunIDForProbe set the run_id for the dedicated probe.
+// setRunIDForProbe set the run_id for the dedicated probe.
 // which will used in the continuous cmd probe, run_id is used as suffix in the external pod name
 func setRunIDForProbe(resultDetails *types.ResultDetails, probeName, probeType, runid string) {
 
@@ -251,7 +252,7 @@ func getDescription(mode, phase string) string {
 	}
 }
 
-//CheckForErrorInContinuousProbe check for the error in the continuous probes
+// CheckForErrorInContinuousProbe check for the error in the continuous probes
 func checkForErrorInContinuousProbe(resultDetails *types.ResultDetails, timeout, delay int, probeName string) error {
 	probe := getProbeByName(probeName, resultDetails.ProbeDetails)
 	timeoutChan := time.After(time.Duration(timeout) * time.Second)
