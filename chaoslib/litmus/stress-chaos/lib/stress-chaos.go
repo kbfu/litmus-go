@@ -18,7 +18,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-//PrepareAndInjectStressChaos contains the prepration & injection steps for the stress experiments.
+// PrepareAndInjectStressChaos contains the prepration & injection steps for the stress experiments.
 func PrepareAndInjectStressChaos(experimentsDetails *experimentTypes.ExperimentDetails, clients clients.ClientSets, resultDetails *types.ResultDetails, eventsDetails *types.EventDetails, chaosDetails *types.ChaosDetails) error {
 
 	targetPodList := apiv1.PodList{}
@@ -113,6 +113,8 @@ func PrepareAndInjectStressChaos(experimentsDetails *experimentTypes.ExperimentD
 			return err
 		}
 	case "parallel":
+		// todo need to update targetPodList constantly
+		// todo if there are new pods, inject another one
 		if err = injectChaosInParallelMode(experimentsDetails, targetPodList, clients, chaosDetails, resultDetails, eventsDetails); err != nil {
 			return err
 		}
@@ -363,8 +365,8 @@ func ptrint64(p int64) *int64 {
 	return &p
 }
 
-//SetChaosTunables will setup a random value within a given range of values
-//If the value is not provided in range it'll setup the initial provided value.
+// SetChaosTunables will setup a random value within a given range of values
+// If the value is not provided in range it'll setup the initial provided value.
 func SetChaosTunables(experimentsDetails *experimentTypes.ExperimentDetails) {
 	experimentsDetails.CPUcores = common.ValidateRange(experimentsDetails.CPUcores)
 	experimentsDetails.CPULoad = common.ValidateRange(experimentsDetails.CPULoad)
