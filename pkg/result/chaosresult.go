@@ -270,6 +270,7 @@ func updateHistory(result *v1alpha1.ChaosResult) {
 // AnnotateChaosResult annotate the chaosResult for the chaos status
 // using kubectl cli to annotate the chaosresult as it will automatically handle the race condition in case of multiple helpers
 func AnnotateChaosResult(resultName, namespace, status, kind, name string) error {
+	return nil
 	command := exec.Command("kubectl", "annotate", "chaosresult", resultName, "-n", namespace, kind+"/"+name+"="+status, "--overwrite")
 	var out, stderr bytes.Buffer
 	command.Stdout = &out
