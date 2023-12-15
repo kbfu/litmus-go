@@ -465,8 +465,9 @@ func getCGroupManager(pid int, containerID string) (interface{}, error) {
 	if cgroups.Mode() == cgroups.Unified {
 		groupPath, err := cgroupsv2.PidGroupPath(pid)
 		if err != nil {
-			return nil, errors.Errorf("Error in getting groupPath, %v, the group path is %s", err, groupPath)
+			return nil, errors.Errorf("Error in getting groupPath, %v", err)
 		}
+		log.Infof("group path: %s", groupPath)
 
 		cgroup2, err := cgroupsv2.LoadManager("/sys/fs/cgroup", groupPath)
 		if err != nil {
