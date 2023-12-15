@@ -110,10 +110,10 @@ func prepareStressChaos(experimentsDetails *experimentTypes.ExperimentDetails, c
 			events.GenerateEvents(eventsDetails, clients, chaosDetails, "ChaosEngine")
 		}
 
-		cgroupManager, err := getCGroupManager(int(targetPID), containerID)
-		if err != nil {
-			return errors.Errorf("fail to get the cgroup manager, err: %v", err)
-		}
+		//cgroupManager, err := getCGroupManager(int(targetPID), containerID)
+		//if err != nil {
+		//	return errors.Errorf("fail to get the cgroup manager, err: %v", err)
+		//}
 
 		// get stressors in list format
 		stressorList := prepareStressor(experimentsDetails)
@@ -140,12 +140,12 @@ func prepareStressChaos(experimentsDetails *experimentTypes.ExperimentDetails, c
 		go abortWatcher(cmd.Process.Pid, resultDetails.Name, chaosDetails.ChaosNamespace, experimentsDetails.TargetPods)
 
 		// add the stress process to the cgroup of target container
-		if err = addProcessToCgroup(cmd.Process.Pid, cgroupManager); err != nil {
-			if killErr := cmd.Process.Kill(); killErr != nil {
-				return errors.Errorf("stressors failed killing %v process, err: %v", cmd.Process.Pid, killErr)
-			}
-			return errors.Errorf("fail to add the stress process into target container cgroup, err: %v", err)
-		}
+		//if err = addProcessToCgroup(cmd.Process.Pid, cgroupManager); err != nil {
+		//	if killErr := cmd.Process.Kill(); killErr != nil {
+		//		return errors.Errorf("stressors failed killing %v process, err: %v", cmd.Process.Pid, killErr)
+		//	}
+		//	return errors.Errorf("fail to add the stress process into target container cgroup, err: %v", err)
+		//}
 
 		log.Info("[Info]: Sending signal to resume the stress process")
 		// wait for the process to start before sending the resume signal
