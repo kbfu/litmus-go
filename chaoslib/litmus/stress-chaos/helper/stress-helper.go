@@ -467,11 +467,19 @@ func getCGroupManager(pid int, containerID string) (interface{}, error) {
 		//if err != nil {
 		//	return nil, errors.Errorf("Error in getting groupPath, %v", err)
 		//}
-		groupPath, err := exec.Command("bash", "-c", fmt.Sprintf("nsenter -t 1 -C -m -- cat /proc/%v/cgroup", pid)).CombinedOutput()
+		groupPath := ""
+		output, err := exec.Command("bash", "-c", fmt.Sprintf("nsenter -t 1 -C -m -- cat /proc/%v/cgroup", pid)).CombinedOutput()
 		if err != nil {
-			return nil, errors.Errorf("Error in getting groupPath,%s", string(groupPath))
+			return nil, errors.Errorf("Error in getting groupPath,%s", string(output))
 		}
-		log.Infof("group path: %s", string(groupPath))
+		parts := strings.SplitN(string(output), ":", 3)
+		if len(parts) < 3 {
+			return "", fmt.Errorf("invalid cgroup entry: %s", string(output))
+		}
+		if parts[0] == "0" && parts[1] == "" {
+			groupPath = parts[2]
+		}
+		log.Infof("group path: %s", groupPath)
 
 		cgroup2, err := cgroupsv2.LoadManager("/sys/fs/cgroup", string(groupPath))
 		if err != nil {
