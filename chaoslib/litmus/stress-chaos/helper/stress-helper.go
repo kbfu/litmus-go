@@ -211,6 +211,7 @@ func prepareStressChaos(experimentsDetails *experimentTypes.ExperimentDetails, c
 					log.Errorf("pod not found: %v", err)
 				}
 				for {
+					time.Sleep(time.Second)
 					log.Info("waiting for pod up and running")
 					if pod.Status.Phase == coreV1.PodRunning {
 						for _, condition := range pod.Status.Conditions {
@@ -221,9 +222,7 @@ func prepareStressChaos(experimentsDetails *experimentTypes.ExperimentDetails, c
 							}
 						}
 					}
-					time.Sleep(time.Second)
 				}
-
 			}
 			log.Info("[Info]: Chaos injection completed")
 			if err := terminateProcess(cmd.Process.Pid); err != nil {
