@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - '*'
+    branches:
+      - godzilla-dev
 
 jobs:
   build:

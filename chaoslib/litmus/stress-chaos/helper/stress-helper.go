@@ -164,7 +164,11 @@ func prepareStressChaos(experimentsDetails *experimentTypes.ExperimentDetails, c
 		log.Info("[Wait]: Waiting for chaos completion")
 		// channel to check the completion of the stress process
 		done := make(chan error)
-		go func() { done <- cmd.Wait() }()
+		go func() {
+			output, _ := cmd.CombinedOutput()
+			log.Infof("output: %s", string(output))
+			done <- cmd.Wait()
+		}()
 
 		// check the timeout for the command
 		// Note: timeout will occur when process didn't complete even after 10s of chaos duration
