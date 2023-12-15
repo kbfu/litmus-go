@@ -61,6 +61,7 @@ func getDockerPID(containerID, socketPath string) (int, error) {
 	// in docker, pid is present inside state.pid attribute of inspect output
 	var resp []DockerInspectResponse
 	if err := json.Unmarshal(out, &resp); err != nil {
+		log.Infof("docker inspect result: %s", string(out))
 		return 0, err
 	}
 	pid := resp[0].State.PID
@@ -130,7 +131,7 @@ func getCRIOPID(containerID, socketPath string) (int, error) {
 	return pid, nil
 }
 
-//GetPauseAndSandboxPID extract out the PID of the target container
+// GetPauseAndSandboxPID extract out the PID of the target container
 func GetPauseAndSandboxPID(runtime, containerID, socketPath string) (int, error) {
 	var pid int
 
