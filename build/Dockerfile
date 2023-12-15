@@ -20,7 +20,9 @@ FROM alpine:3.15.0 AS dep
 RUN apk --update add \
         sudo \
         iproute2 \
-        iptables
+        iptables \
+        util-linux
+
 
 
 # Packaging stage
@@ -35,6 +37,7 @@ COPY --from=dep /usr/bin/sudo /usr/bin/
 COPY --from=dep /usr/lib/sudo /usr/lib/sudo
 COPY --from=dep /sbin/tc /sbin/
 COPY --from=dep /sbin/iptables /sbin/
+COPY --from=dep /usr/bin/nsenter /usr/bin/nsenter
 COPY ./build/libnsenter.so /usr/local/lib/
 COPY ./build/nsexec /usr/local/bin
 

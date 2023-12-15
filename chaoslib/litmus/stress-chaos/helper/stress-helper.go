@@ -463,13 +463,17 @@ func abortWatcher(targetPID int, resultName, chaosNS, targetPodName string) {
 // getCGroupManager will return the cgroup for the given pid of the process
 func getCGroupManager(pid int, containerID string) (interface{}, error) {
 	if cgroups.Mode() == cgroups.Unified {
-		groupPath, err := cgroupsv2.PidGroupPath(pid)
+		//groupPath, err := cgroupsv2.PidGroupPath(pid)
+		//if err != nil {
+		//	return nil, errors.Errorf("Error in getting groupPath, %v", err)
+		//}
+		groupPath, err := exec.Command("sh", "-c", fmt.Sprintf("nsenter -t 1 -C -- cat /proc/%v/cgroup", pid)).CombinedOutput()
 		if err != nil {
 			return nil, errors.Errorf("Error in getting groupPath, %v", err)
 		}
-		log.Infof("group path: %s", groupPath)
+		log.Infof("group path: %s", string(groupPath))
 
-		cgroup2, err := cgroupsv2.LoadManager("/sys/fs/cgroup", groupPath)
+		cgroup2, err := cgroupsv2.LoadManager("/sys/fs/cgroup", string(groupPath))
 		if err != nil {
 			return nil, errors.Errorf("Error loading cgroup v2 manager, %v", err)
 		}
