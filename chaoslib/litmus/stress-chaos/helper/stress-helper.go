@@ -202,7 +202,7 @@ func prepareStressChaos(experimentsDetails *experimentTypes.ExperimentDetails, c
 						return errors.Errorf("process stopped with SIGKILL signal")
 					}
 				}
-				return errors.Errorf("process exited before the actual cleanup, err: %v", err)
+				//return errors.Errorf("process exited before the actual cleanup, err: %v", err)
 			}
 			// pod crash, need to restart
 			if end > int(time.Now().Unix()) {
