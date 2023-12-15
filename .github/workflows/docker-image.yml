@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    runs-on: gh-runner-litmus-go
+    runs-on: dind-runner
     steps:
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
