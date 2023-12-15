@@ -467,7 +467,7 @@ func getCGroupManager(pid int, containerID string) (interface{}, error) {
 		//if err != nil {
 		//	return nil, errors.Errorf("Error in getting groupPath, %v", err)
 		//}
-		groupPath, err := exec.Command("sh", "-c", fmt.Sprintf("nsenter -t 1 -C -- cat /proc/%v/cgroup", pid)).CombinedOutput()
+		groupPath, err := exec.Command("sh", "-c", fmt.Sprintf("nsenter -t 1 -C -m -- cat /proc/%v/cgroup", pid)).CombinedOutput()
 		if err != nil {
 			return nil, errors.Errorf("Error in getting groupPath, %v", err)
 		}
