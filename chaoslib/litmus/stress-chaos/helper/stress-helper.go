@@ -3,8 +3,11 @@ package helper
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"fmt"
 	"io"
+	coreV1 "k8s.io/api/core/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -173,6 +176,8 @@ func prepareStressChaos(experimentsDetails *experimentTypes.ExperimentDetails, c
 		// check the timeout for the command
 		// Note: timeout will occur when process didn't complete even after 10s of chaos duration
 		timeout := time.After((time.Duration(experimentsDetails.ChaosDuration) + 30) * time.Second)
+		start := time.Now().Unix()
+		end := int(start) + experimentsDetails.ChaosDuration + 30
 
 		select {
 		case <-timeout:
@@ -198,6 +203,27 @@ func prepareStressChaos(experimentsDetails *experimentTypes.ExperimentDetails, c
 					}
 				}
 				return errors.Errorf("process exited before the actual cleanup, err: %v", err)
+			}
+			// pod crash, need to restart
+			if end > int(time.Now().Unix()) {
+				pod, err := clients.KubeClient.CoreV1().Pods(experimentsDetails.AppNS).Get(context.Background(), experimentsDetails.TargetPods, v1.GetOptions{})
+				if err != nil {
+					log.Errorf("pod not found: %v", err)
+				}
+				for {
+					log.Info("waiting for pod up and running")
+					if pod.Status.Phase == coreV1.PodRunning {
+						for _, condition := range pod.Status.Conditions {
+							if condition.Type == coreV1.ContainersReady && condition.Status == coreV1.ConditionTrue {
+								experimentsDetails.ChaosDuration = end - int(time.Now().Unix())
+								log.Infof("still got %v seconds to go, run again", experimentsDetails.ChaosDuration)
+								return prepareStressChaos(experimentsDetails, clients, eventsDetails, chaosDetails, resultDetails)
+							}
+						}
+					}
+					time.Sleep(time.Second)
+				}
+
 			}
 			log.Info("[Info]: Chaos injection completed")
 			if err := terminateProcess(cmd.Process.Pid); err != nil {
