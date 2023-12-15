@@ -20,8 +20,8 @@ FROM alpine:3.15.0 AS dep
 RUN apk --update add \
         sudo \
         iproute2 \
-        iptables
-
+        iptables \
+        util-linux
 
 
 # Packaging stage
@@ -39,8 +39,9 @@ COPY --from=dep /usr/bin/sudo /usr/bin/
 COPY --from=dep /usr/lib/sudo /usr/lib/sudo
 COPY --from=dep /sbin/tc /sbin/
 COPY --from=dep /sbin/iptables /sbin/
-COPY ./build/$TARGETARCH/libnsenter.so /usr/local/lib/
-COPY ./build/$TARGETARCH/nsexec /usr/local/bin
+COPY --from=dep /usr/bin/nsenter /usr/bin/nsenter
+COPY ./build/$TARGETARCH/libnsenter.so /usr/local/lib/libnsenter.so
+COPY ./build/$TARGETARCH/nsexec /usr/local/bin/nsexec
 
 #Copying Necessary Files
 COPY ./pkg/cloud/aws/common/ssm-docs/LitmusChaos-AWS-SSM-Docs.yml .
