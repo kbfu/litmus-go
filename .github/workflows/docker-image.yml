@@ -26,4 +26,4 @@ jobs:
           push: true
           tags: wxt432/chaos-go-runner:${{ github.ref_name }},wxt432/chaos-go-runner:latest
           platforms: linux/amd64,linux/arm64
-          file: ./build/Dockerfile.local
+          file: ./build/Dockerfile.godzilla
