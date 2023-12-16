@@ -219,14 +219,9 @@ func prepareStressChaos(experimentsDetails *experimentTypes.ExperimentDetails, c
 					if pod.Status.Phase == coreV1.PodRunning {
 						for _, condition := range pod.Status.Conditions {
 							if condition.Type == coreV1.ContainersReady && condition.Status == coreV1.ConditionTrue {
-								for _, cs := range pod.Status.ContainerStatuses {
-									itstrue := true
-									if cs.Name == experimentsDetails.TargetContainer && cs.Started == &itstrue {
-										experimentsDetails.ChaosDuration = end - int(time.Now().Unix())
-										log.Infof("still got %v seconds to go, run again", experimentsDetails.ChaosDuration)
-										return prepareStressChaos(experimentsDetails, clients, eventsDetails, chaosDetails, resultDetails)
-									}
-								}
+								experimentsDetails.ChaosDuration = end - int(time.Now().Unix())
+								log.Infof("still got %v seconds to go, run again", experimentsDetails.ChaosDuration)
+								return prepareStressChaos(experimentsDetails, clients, eventsDetails, chaosDetails, resultDetails)
 							}
 						}
 					}
