@@ -114,7 +114,7 @@ func prepareStressChaos(experimentsDetails *experimentTypes.ExperimentDetails, c
 			events.GenerateEvents(eventsDetails, clients, chaosDetails, "ChaosEngine")
 		}
 
-		cgroupManager, err := getCGroupManager(int(targetPID), containerID)
+		cgroupManager, err, groupPath := getCGroupManager(targetPID, containerID)
 		if err != nil {
 			return errors.Errorf("fail to get the cgroup manager, err: %v", err)
 		}
@@ -144,7 +144,7 @@ func prepareStressChaos(experimentsDetails *experimentTypes.ExperimentDetails, c
 		go abortWatcher(cmd.Process.Pid, resultDetails.Name, chaosDetails.ChaosNamespace, experimentsDetails.TargetPods)
 
 		// add the stress process to the cgroup of target container
-		if err = addProcessToCgroup(cmd.Process.Pid, cgroupManager); err != nil {
+		if err = addProcessToCgroup(cmd.Process.Pid, cgroupManager, groupPath); err != nil {
 			if killErr := cmd.Process.Kill(); killErr != nil {
 				return errors.Errorf("stressors failed killing %v process, err: %v", cmd.Process.Pid, killErr)
 			}
@@ -498,7 +498,7 @@ func abortWatcher(targetPID int, resultName, chaosNS, targetPodName string) {
 }
 
 // getCGroupManager will return the cgroup for the given pid of the process
-func getCGroupManager(pid int, containerID string) (interface{}, error) {
+func getCGroupManager(pid int, containerID string) (interface{}, error, string) {
 	if cgroups.Mode() == cgroups.Unified {
 		//groupPath, err := cgroupsv2.PidGroupPath(pid)
 		//if err != nil {
@@ -507,11 +507,11 @@ func getCGroupManager(pid int, containerID string) (interface{}, error) {
 		groupPath := ""
 		output, err := exec.Command("bash", "-c", fmt.Sprintf("nsenter -t 1 -C -m -- cat /proc/%v/cgroup", pid)).CombinedOutput()
 		if err != nil {
-			return nil, errors.Errorf("Error in getting groupPath,%s", string(output))
+			return nil, errors.Errorf("Error in getting groupPath,%s", string(output)), ""
 		}
 		parts := strings.SplitN(string(output), ":", 3)
 		if len(parts) < 3 {
-			return "", fmt.Errorf("invalid cgroup entry: %s", string(output))
+			return "", fmt.Errorf("invalid cgroup entry: %s", string(output)), ""
 		}
 		if parts[0] == "0" && parts[1] == "" {
 			groupPath = parts[2]
@@ -520,29 +520,37 @@ func getCGroupManager(pid int, containerID string) (interface{}, error) {
 
 		cgroup2, err := cgroupsv2.LoadManager("/sys/fs/cgroup", string(groupPath))
 		if err != nil {
-			return nil, errors.Errorf("Error loading cgroup v2 manager, %v", err)
+			return nil, errors.Errorf("Error loading cgroup v2 manager, %v", err), ""
 		}
-		return cgroup2, nil
+		return cgroup2, nil, groupPath
 	}
 	path := pidPath(pid)
 	cgroup, err := findValidCgroup(path, containerID)
 	if err != nil {
-		return nil, errors.Errorf("fail to get cgroup, err: %v", err)
+		return nil, errors.Errorf("fail to get cgroup, err: %v", err), ""
 	}
 	cgroup1, err := cgroups.Load(cgroups.V1, cgroups.StaticPath(cgroup))
 	if err != nil {
-		return nil, errors.Errorf("fail to load the cgroup, err: %v", err)
+		return nil, errors.Errorf("fail to load the cgroup, err: %v", err), ""
 	}
 
-	return cgroup1, nil
+	return cgroup1, nil, ""
 }
 
 // addProcessToCgroup will add the process to cgroup
 // By default it will add to v1 cgroup
-func addProcessToCgroup(pid int, control interface{}) error {
+func addProcessToCgroup(pid int, control interface{}, groupPath string) error {
 	if cgroups.Mode() == cgroups.Unified {
-		var cgroup1 = control.(*cgroupsv2.Manager)
-		return cgroup1.AddProc(uint64(pid))
+		//var cgroup1 = control.(*cgroupsv2.Manager)
+		//return cgroup1.AddProc(uint64(pid))
+		args := []string{"-t", "1", "-C", "--", "sudo", "sh", "-c",
+			fmt.Sprintf("echo %d >> /sys/fs/cgroup%s/cgroup.procs", pid, strings.ReplaceAll(groupPath, "\n", ""))}
+		output, err := exec.Command("nsenter", args...).CombinedOutput()
+		if err != nil {
+			logrus.Error(string(output))
+			return err
+		}
+		return nil
 	}
 	var cgroup1 = control.(cgroups.Cgroup)
 	return cgroup1.Add(cgroups.Process{Pid: pid})
