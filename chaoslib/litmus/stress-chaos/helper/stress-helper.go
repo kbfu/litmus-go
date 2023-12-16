@@ -206,11 +206,12 @@ func prepareStressChaos(experimentsDetails *experimentTypes.ExperimentDetails, c
 			}
 			// pod crash, need to restart
 			if end > int(time.Now().Unix()) {
-				pod, err := clients.KubeClient.CoreV1().Pods(experimentsDetails.AppNS).Get(context.Background(), experimentsDetails.TargetPods, v1.GetOptions{})
-				if err != nil {
-					log.Errorf("pod not found: %v", err)
-				}
 				for {
+					pod, err := clients.KubeClient.CoreV1().Pods(experimentsDetails.AppNS).Get(context.Background(), experimentsDetails.TargetPods, v1.GetOptions{})
+					if err != nil {
+						log.Errorf("pod not found: %v", err)
+						break
+					}
 					if end < int(time.Now().Unix()) {
 						break
 					}
@@ -229,7 +230,7 @@ func prepareStressChaos(experimentsDetails *experimentTypes.ExperimentDetails, c
 							}
 						}
 					}
-					time.Sleep(time.Second)
+					time.Sleep(time.Second * 3)
 				}
 			}
 			log.Info("[Info]: Chaos injection completed")
