@@ -178,7 +178,7 @@ func prepareStressChaos(experimentsDetails *experimentTypes.ExperimentDetails, c
 		// Note: timeout will occur when process didn't complete even after 10s of chaos duration
 		timeout := time.After((time.Duration(experimentsDetails.ChaosDuration) + 30) * time.Second)
 		start := time.Now().Unix()
-		end := int(start) + experimentsDetails.ChaosDuration + 30
+		end := int(start) + experimentsDetails.ChaosDuration
 
 		select {
 		case <-timeout:
