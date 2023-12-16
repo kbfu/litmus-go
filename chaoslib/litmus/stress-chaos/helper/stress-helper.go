@@ -8,6 +8,7 @@ import (
 	"io"
 	coreV1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/watch"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -205,27 +206,34 @@ func prepareStressChaos(experimentsDetails *experimentTypes.ExperimentDetails, c
 				//return errors.Errorf("process exited before the actual cleanup, err: %v", err)
 			}
 			// pod crash, need to restart
-			if end > int(time.Now().Unix()) {
-				for {
-					pod, err := clients.KubeClient.CoreV1().Pods(experimentsDetails.AppNS).Get(context.Background(), experimentsDetails.TargetPods, v1.GetOptions{})
-					if err != nil {
-						log.Errorf("pod not found: %v", err)
-						break
-					}
-					if end < int(time.Now().Unix()) {
-						break
-					}
-					log.Info("waiting for pod up and running")
+			w, err := clients.KubeClient.CoreV1().Pods(experimentsDetails.AppNS).Watch(context.Background(), v1.ListOptions{
+				FieldSelector: fmt.Sprintf("metadata.name=%s", experimentsDetails.TargetPods),
+			})
+			if err != nil {
+				log.Errorf("pod not found: %v", err)
+				return err
+			}
+			for event := range w.ResultChan() {
+				log.Info("waiting for pod up and running")
+				if end < int(time.Now().Unix()) {
+					w.Stop()
+					break
+				}
+				pod, ok := event.Object.(*coreV1.Pod)
+				if !ok {
+					continue
+				}
+				if event.Type == watch.Modified {
 					if pod.Status.Phase == coreV1.PodRunning {
 						for _, condition := range pod.Status.Conditions {
 							if condition.Type == coreV1.ContainersReady && condition.Status == coreV1.ConditionTrue {
 								experimentsDetails.ChaosDuration = end - int(time.Now().Unix())
 								log.Infof("still got %v seconds to go, run again", experimentsDetails.ChaosDuration)
+								w.Stop()
 								return prepareStressChaos(experimentsDetails, clients, eventsDetails, chaosDetails, resultDetails)
 							}
 						}
 					}
-					time.Sleep(time.Second * 3)
 				}
 			}
 			log.Info("[Info]: Chaos injection completed")
