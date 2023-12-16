@@ -10,4 +10,9 @@ COPY ./build/sources.list /etc/apt/sources.list
 RUN rm -rf /etc/apt/sources.list.d && \
     apt update && \
     apt install -y apt-transport-https ca-certificates && \
-    apt install -y sudo iptables stress-ng iproute2
+    apt install -y sudo iptables stress-ng iproute2 curl gnupg && \
+    install -m 0755 -d /etc/apt/keyrings && \
+    curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg && \
+    sudo chmod a+r /etc/apt/keyrings/docker.gpg && \
+    apt-get update && \
+    apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
