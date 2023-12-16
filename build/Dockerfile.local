@@ -1,32 +1,9 @@
-FROM alpine:3.15.0 AS dep
-
-# Install generally useful things
-RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apk/repositories && \
-    apk --update add \
-        sudo \
-        iproute2 \
-        iptables \
-        util-linux
-
-
-# Packaging stage
-# Image source: https://github.com/litmuschaos/test-tools/blob/master/custom/hardened-alpine/experiment/Dockerfile
-# The base image is non-root (have litmus user) with default litmus directory.
-FROM litmuschaos/experiment-alpine:2.14.0
-
-LABEL maintainer="LitmusChaos"
+FROM wxt432/chaos-go-runner-base:latest
 
 ARG TARGETOS=linux
 ARG TARGETARCH
 
 COPY output/ /litmus
-COPY --from=dep /usr/bin/sudo /usr/bin/
-COPY --from=dep /usr/lib/sudo /usr/lib/sudo
-COPY --from=dep /sbin/tc /sbin/
-COPY --from=dep /sbin/iptables /sbin/
-COPY --from=dep /usr/bin/nsenter /usr/bin/nsenter
-COPY ./build/$TARGETARCH/libnsenter.so /usr/local/lib/libnsenter.so
-COPY ./build/$TARGETARCH/nsexec /usr/local/bin/nsexec
 
 #Copying Necessary Files
 COPY ./pkg/cloud/aws/common/ssm-docs/LitmusChaos-AWS-SSM-Docs.yml .

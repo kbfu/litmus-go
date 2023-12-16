@@ -1,0 +1,13 @@
+FROM debian:12
+
+ARG TARGETOS=linux
+ARG TARGETARCH
+WORKDIR /litmus
+COPY ./build/$TARGETARCH/libnsenter.so /usr/local/lib/libnsenter.so
+COPY ./build/$TARGETARCH/nsexec /usr/local/bin/nsexec
+
+COPY ./build/sources.list /etc/apt/sources.list
+RUN rm -rf /etc/apt/sources.list.d && \
+    apt update && \
+    apt install -y apt-transport-https ca-certificates && \
+    apt install -y sudo iptables stress-ng iproute2
