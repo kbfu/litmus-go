@@ -9,7 +9,7 @@ COPY ./build/$TARGETARCH/nsexec /usr/local/bin/nsexec
 COPY ./build/sources.list /etc/apt/sources.list
 RUN apt update && \
     apt install -y apt-transport-https ca-certificates && \
-    apt install -y sudo iptables stress-ng iproute2 curl gnupg && \
+    apt install -y sudo stress-ng curl gnupg && \
     install -m 0755 -d /etc/apt/keyrings && \
     curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg && \
     sudo chmod a+r /etc/apt/keyrings/docker.gpg && \
