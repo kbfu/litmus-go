@@ -7,8 +7,7 @@ COPY ./build/$TARGETARCH/libnsenter.so /usr/local/lib/libnsenter.so
 COPY ./build/$TARGETARCH/nsexec /usr/local/bin/nsexec
 
 COPY ./build/sources.list /etc/apt/sources.list
-RUN pip install ./tcconfig && \
-    apt update && \
+RUN apt update && \
     apt install -y apt-transport-https ca-certificates && \
     apt install -y sudo iptables stress-ng iproute2 curl gnupg && \
     install -m 0755 -d /etc/apt/keyrings && \
@@ -21,4 +20,5 @@ RUN pip install ./tcconfig && \
     apt update && \
     apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin && \
     curl -L https://github.com/litmuschaos/test-tools/releases/download/2.14.0/pause-linux-${TARGETARCH} --output /usr/local/bin/pause && \
-    chmod +x /usr/local/bin/pause
+    chmod +x /usr/local/bin/pause && \
+    pip install git+https://github.com/kbfu/tcconfig
