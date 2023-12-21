@@ -4,9 +4,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
+	"os/signal"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/litmuschaos/litmus-go/pkg/clients"
@@ -23,6 +26,8 @@ import (
 	clientTypes "k8s.io/apimachinery/pkg/types"
 )
 
+var abort chan os.Signal
+
 // Helper injects the container-kill chaos
 func Helper(clients clients.ClientSets) {
 
@@ -30,6 +35,8 @@ func Helper(clients clients.ClientSets) {
 	eventsDetails := types.EventDetails{}
 	chaosDetails := types.ChaosDetails{}
 	resultDetails := types.ResultDetails{}
+	abort = make(chan os.Signal, 1)
+	signal.Notify(abort, os.Interrupt, syscall.SIGTERM)
 
 	//Fetching all the ENV passed in the helper pod
 	log.Info("[PreReq]: Getting the ENV variables")
@@ -44,6 +51,19 @@ func Helper(clients clients.ClientSets) {
 	err := killContainer(&experimentsDetails, clients, &eventsDetails, &chaosDetails, &resultDetails)
 	if err != nil {
 		log.Fatalf("helper pod failed, err: %v", err)
+	}
+}
+
+func abortWatcher(targetPid int) {
+	select {
+	case <-abort:
+		log.Info("[Abort]: Chaos Revert Started")
+		output, err := exec.Command("kill", "-s", "CONT", fmt.Sprintf("%d", targetPid)).CombinedOutput()
+		if err != nil {
+			logrus.Error(string(output))
+		}
+		log.Info("[Abort]: Chaos Revert Completed")
+		os.Exit(1)
 	}
 }
 
@@ -106,6 +126,10 @@ func killContainer(experimentsDetails *experimentTypes.ExperimentDetails, client
 		if err != nil {
 			logrus.Error(string(output))
 			return err
+		}
+		// watch for term if stop signal
+		if experimentsDetails.Signal == "18" || strings.ToLower(experimentsDetails.Signal) == "stop" || strings.ToLower(experimentsDetails.Signal) == "sigstop" {
+			go abortWatcher(targetPid)
 		}
 
 		//Waiting for the chaos interval after chaos injection
