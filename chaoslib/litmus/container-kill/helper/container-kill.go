@@ -3,8 +3,10 @@ package helper
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"os/exec"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/litmuschaos/litmus-go/pkg/clients"
@@ -53,6 +55,7 @@ func killContainer(experimentsDetails *experimentTypes.ExperimentDetails, client
 	//ChaosStartTimeStamp contains the start timestamp, when the chaos injection begin
 	ChaosStartTimeStamp := time.Now()
 	duration := int(time.Since(ChaosStartTimeStamp).Seconds())
+	targetPid := 0
 
 	for duration < experimentsDetails.ChaosDuration {
 
@@ -75,6 +78,11 @@ func killContainer(experimentsDetails *experimentTypes.ExperimentDetails, client
 			"RestartCountBefore": restartCountBefore,
 		})
 
+		targetPid, err = common.GetPID(experimentsDetails.ContainerRuntime, containerID, experimentsDetails.SocketPath)
+		if err != nil {
+			return err
+		}
+
 		// record the event inside chaosengine
 		if experimentsDetails.EngineName != "" {
 			msg := "Injecting " + experimentsDetails.ExperimentName + " chaos on application pod"
@@ -82,17 +90,22 @@ func killContainer(experimentsDetails *experimentTypes.ExperimentDetails, client
 			events.GenerateEvents(eventsDetails, clients, chaosDetails, "ChaosEngine")
 		}
 
-		switch experimentsDetails.ContainerRuntime {
-		case "docker":
-			if err := stopDockerContainer(containerID, experimentsDetails.SocketPath, experimentsDetails.Signal); err != nil {
-				return err
-			}
-		case "containerd", "crio":
-			if err := stopContainerdContainer(containerID, experimentsDetails.SocketPath, experimentsDetails.Signal); err != nil {
-				return err
-			}
-		default:
-			return errors.Errorf("%v container runtime not supported", experimentsDetails.ContainerRuntime)
+		//switch experimentsDetails.ContainerRuntime {
+		//case "docker":
+		//	if err := stopDockerContainer(containerID, experimentsDetails.SocketPath, experimentsDetails.Signal); err != nil {
+		//		return err
+		//	}
+		//case "containerd", "crio":
+		//	if err := stopContainerdContainer(containerID, experimentsDetails.SocketPath, experimentsDetails.Signal); err != nil {
+		//		return err
+		//	}
+		//default:
+		//	return errors.Errorf("%v container runtime not supported", experimentsDetails.ContainerRuntime)
+		//}
+		output, err := stopContainer(targetPid, experimentsDetails.Signal)
+		if err != nil {
+			logrus.Error(string(output))
+			return err
 		}
 
 		//Waiting for the chaos interval after chaos injection
@@ -107,13 +120,26 @@ func killContainer(experimentsDetails *experimentTypes.ExperimentDetails, client
 			return errors.Errorf("application container is not in running state, %v", err)
 		}
 
+		// if SIGSTOP, no need to verify
 		// It will verify that the restart count of container should increase after chaos injection
-		err = verifyRestartCount(experimentsDetails, experimentsDetails.TargetPods, clients, restartCountBefore)
-		if err != nil {
-			return err
+		if experimentsDetails.Signal != "18" && strings.ToLower(experimentsDetails.Signal) != "stop" && strings.ToLower(experimentsDetails.Signal) != "sigstop" {
+			err = verifyRestartCount(experimentsDetails, experimentsDetails.TargetPods, clients, restartCountBefore)
+			if err != nil {
+				return err
+			}
 		}
 		duration = int(time.Since(ChaosStartTimeStamp).Seconds())
 	}
+	// restore the container if it's SIGSTOP
+	if experimentsDetails.Signal == "18" || strings.ToLower(experimentsDetails.Signal) == "stop" || strings.ToLower(experimentsDetails.Signal) == "sigstop" {
+		logrus.Info("detected stop signal, need to recover")
+		output, err := stopContainer(targetPid, "SIGCONT")
+		if err != nil {
+			logrus.Error(string(output))
+			return err
+		}
+	}
+
 	if err := result.AnnotateChaosResult(resultDetails.Name, chaosDetails.ChaosNamespace, "targeted", "pod", experimentsDetails.TargetPods); err != nil {
 		return err
 	}
@@ -121,7 +147,7 @@ func killContainer(experimentsDetails *experimentTypes.ExperimentDetails, client
 	return nil
 }
 
-//stopContainerdContainer kill the application container
+// stopContainerdContainer kill the application container
 func stopContainerdContainer(containerID, socketPath, signal string) error {
 	var errOut bytes.Buffer
 	var cmd *exec.Cmd
@@ -141,7 +167,7 @@ func stopContainerdContainer(containerID, socketPath, signal string) error {
 	return nil
 }
 
-//stopDockerContainer kill the application container
+// stopDockerContainer kill the application container
 func stopDockerContainer(containerID, socketPath, signal string) error {
 	var errOut bytes.Buffer
 	host := "unix://" + socketPath
@@ -153,7 +179,11 @@ func stopDockerContainer(containerID, socketPath, signal string) error {
 	return nil
 }
 
-//getRestartCount return the restart count of target container
+func stopContainer(pid int, signal string) (output []byte, err error) {
+	return exec.Command("kill", "-s", signal, fmt.Sprintf("%d", pid)).CombinedOutput()
+}
+
+// getRestartCount return the restart count of target container
 func getRestartCount(experimentsDetails *experimentTypes.ExperimentDetails, podName string, clients clients.ClientSets) (int, error) {
 	pod, err := clients.KubeClient.CoreV1().Pods(experimentsDetails.AppNS).Get(context.Background(), podName, v1.GetOptions{})
 	if err != nil {
@@ -169,7 +199,7 @@ func getRestartCount(experimentsDetails *experimentTypes.ExperimentDetails, podN
 	return restartCount, nil
 }
 
-//verifyRestartCount verify the restart count of target container that it is restarted or not after chaos injection
+// verifyRestartCount verify the restart count of target container that it is restarted or not after chaos injection
 func verifyRestartCount(experimentsDetails *experimentTypes.ExperimentDetails, podName string, clients clients.ClientSets, restartCountBefore int) error {
 
 	restartCountAfter := 0
@@ -195,7 +225,7 @@ func verifyRestartCount(experimentsDetails *experimentTypes.ExperimentDetails, p
 		})
 }
 
-//getENV fetches all the env variables from the runner pod
+// getENV fetches all the env variables from the runner pod
 func getENV(experimentDetails *experimentTypes.ExperimentDetails) {
 	experimentDetails.ExperimentName = types.Getenv("EXPERIMENT_NAME", "")
 	experimentDetails.InstanceID = types.Getenv("INSTANCE_ID", "")
