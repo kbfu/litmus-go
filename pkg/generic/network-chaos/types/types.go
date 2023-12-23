@@ -46,4 +46,5 @@ type ExperimentDetails struct {
 	SetHelperData                      string
 	SourcePorts                        string
 	DestinationPorts                   string
+	StressType                         string
 }
