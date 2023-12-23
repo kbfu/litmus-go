@@ -23,4 +23,5 @@ RUN apt update && \
     chmod +x /usr/local/bin/pause && \
     pip install git+https://github.com/kbfu/tcconfig && \
     curl -L https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.28.0/crictl-v1.28.0-linux-${TARGETARCH}.tar.gz --output crictl-v1.28.0-linux-${TARGETARCH}.tar.gz && \
-        tar zxvf crictl-v1.28.0-linux-${TARGETARCH}.tar.gz -C /usr/local/bin
+        tar zxvf crictl-v1.28.0-linux-${TARGETARCH}.tar.gz -C /usr/local/bin && \
+    rm -rf crictl-v1.28.0-linux*.tar.gz
