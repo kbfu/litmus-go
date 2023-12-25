@@ -96,6 +96,7 @@ func preparePodNetworkChaos(experimentsDetails *experimentTypes.ExperimentDetail
 
 	// injecting network chaos inside target container
 	if err = injectChaos(experimentsDetails, targetPID); err != nil {
+		killnetem(targetPID, experimentsDetails.NetworkInterface)
 		return err
 	}
 
