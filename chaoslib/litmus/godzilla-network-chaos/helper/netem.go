@@ -126,7 +126,7 @@ func injectChaos(experimentDetails *experimentTypes.ExperimentDetails, pid int) 
 		// source
 		for _, sport := range sPorts {
 			output, err := exec.Command("nsenter", "-t", fmt.Sprintf("%d", pid), "-n", "--", "sh", "-c",
-				fmt.Sprintf("tcset %s --delay %d --src-port %d --delay-distro %d --add",
+				fmt.Sprintf("tcset %s --delay %d --src-port %s --delay-distro %d --add",
 					experimentDetails.NetworkInterface, experimentDetails.NetworkLatency, sport, experimentDetails.Jitter)).CombinedOutput()
 			if err != nil {
 				logrus.Error(string(output))
@@ -134,15 +134,33 @@ func injectChaos(experimentDetails *experimentTypes.ExperimentDetails, pid int) 
 			}
 		}
 		// destination
+		var cmds []string
+		baseCmd := fmt.Sprintf("tcset %s --delay %d --delay-distro %d --add",
+			experimentDetails.NetworkInterface, experimentDetails.NetworkLatency, experimentDetails.Jitter)
 		for _, dip := range destIps {
+			tcsetCmd := baseCmd + fmt.Sprintf(" --network %s", dip)
 			for _, dport := range dPorts {
-				output, err := exec.Command("nsenter", "-t", fmt.Sprintf("%d", pid), "-n", "--", "sh", "-c",
-					fmt.Sprintf("tcset %s --delay %d --network %s --port %s --delay-distro %d --add",
-						experimentDetails.NetworkInterface, experimentDetails.NetworkLatency, dip, dport, experimentDetails.Jitter)).CombinedOutput()
-				if err != nil {
-					logrus.Error(string(output))
-					return err
-				}
+				tcsetCmd += fmt.Sprintf(" --port %s", dport)
+				cmds = append(cmds, tcsetCmd)
+			}
+		}
+		if len(destIps) == 0 {
+			for _, dport := range dPorts {
+				tcsetCmd := baseCmd + fmt.Sprintf(" --port %s", dport)
+				cmds = append(cmds, tcsetCmd)
+			}
+		}
+		// show some message
+		if len(cmds) == 0 {
+			logrus.Infof("nothing will be executed")
+		}
+		for _, cmd := range cmds {
+			logrus.Infof("executing command nsenter -t %d -n -- sh -c %s", pid, cmd)
+			output, err := exec.Command("nsenter", "-t", fmt.Sprintf("%d", pid), "-n", "--", "sh", "-c",
+				cmd).CombinedOutput()
+			if err != nil {
+				logrus.Error(string(output))
+				return err
 			}
 		}
 
@@ -227,6 +245,9 @@ func abortWatcher(targetPID int, networkInterface, resultName, chaosNS, targetPo
 	for retry > 0 {
 		if err = killnetem(targetPID, networkInterface); err != nil {
 			log.Errorf("unable to kill netem process, err :%v", err)
+		}
+		if err == nil {
+			break
 		}
 		retry--
 		time.Sleep(1 * time.Second)
