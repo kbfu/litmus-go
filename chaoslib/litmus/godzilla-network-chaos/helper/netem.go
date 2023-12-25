@@ -123,18 +123,13 @@ func preparePodNetworkChaos(experimentsDetails *experimentTypes.ExperimentDetail
 func injectChaos(experimentDetails *experimentTypes.ExperimentDetails, pid int) error {
 	switch experimentDetails.StressType {
 	case "network-delay":
+		var cmds []string
 		// source
 		for _, sport := range sPorts {
-			output, err := exec.Command("nsenter", "-t", fmt.Sprintf("%d", pid), "-n", "--", "sh", "-c",
-				fmt.Sprintf("tcset %s --delay %d --src-port %s --delay-distro %d --add",
-					experimentDetails.NetworkInterface, experimentDetails.NetworkLatency, sport, experimentDetails.Jitter)).CombinedOutput()
-			if err != nil {
-				logrus.Error(string(output))
-				return err
-			}
+			cmds = append(cmds, fmt.Sprintf("tcset %s --delay %d --src-port %s --delay-distro %d --add",
+				experimentDetails.NetworkInterface, experimentDetails.NetworkLatency, sport, experimentDetails.Jitter))
 		}
 		// destination
-		var cmds []string
 		baseCmd := fmt.Sprintf("tcset %s --delay %d --delay-distro %d --add",
 			experimentDetails.NetworkInterface, experimentDetails.NetworkLatency, experimentDetails.Jitter)
 		for _, dip := range destIps {
