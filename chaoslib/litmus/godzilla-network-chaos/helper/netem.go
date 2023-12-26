@@ -77,7 +77,6 @@ func Helper(clients clients.ClientSets) {
 
 // preparePodNetworkChaos contains the prepration steps before chaos injection
 func preparePodNetworkChaos(experimentsDetails *experimentTypes.ExperimentDetails, clients clients.ClientSets, eventsDetails *types.EventDetails, chaosDetails *types.ChaosDetails, resultDetails *types.ResultDetails) error {
-	timeout := time.After((time.Duration(experimentsDetails.ChaosDuration) + 30) * time.Second)
 	start := time.Now().Unix()
 	end := int(start) + experimentsDetails.ChaosDuration
 
