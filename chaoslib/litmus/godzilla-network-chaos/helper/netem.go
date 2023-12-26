@@ -1,8 +1,12 @@
 package helper
 
 import (
+	"context"
 	"fmt"
 	"github.com/sirupsen/logrus"
+	coreV1 "k8s.io/api/core/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/watch"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -73,6 +77,9 @@ func Helper(clients clients.ClientSets) {
 
 // preparePodNetworkChaos contains the prepration steps before chaos injection
 func preparePodNetworkChaos(experimentsDetails *experimentTypes.ExperimentDetails, clients clients.ClientSets, eventsDetails *types.EventDetails, chaosDetails *types.ChaosDetails, resultDetails *types.ResultDetails) error {
+	timeout := time.After((time.Duration(experimentsDetails.ChaosDuration) + 30) * time.Second)
+	start := time.Now().Unix()
+	end := int(start) + experimentsDetails.ChaosDuration
 
 	containerID, err := common.GetContainerID(experimentsDetails.AppNS, experimentsDetails.TargetPods, experimentsDetails.TargetContainer, clients)
 	if err != nil {
@@ -106,7 +113,46 @@ func preparePodNetworkChaos(experimentsDetails *experimentTypes.ExperimentDetail
 
 	log.Infof("[Chaos]: Waiting for %vs", experimentsDetails.ChaosDuration)
 
-	common.WaitForDuration(experimentsDetails.ChaosDuration)
+	// watch for pod crash event
+	for {
+		if end-int(time.Now().Unix()) <= 0 {
+			break
+		}
+		if checkContainer(targetPID) != nil {
+			// container crash, need to restart
+			w, err := clients.KubeClient.CoreV1().Pods(experimentsDetails.AppNS).Watch(context.Background(), v1.ListOptions{
+				FieldSelector: fmt.Sprintf("metadata.name=%s", experimentsDetails.TargetPods),
+			})
+			if err != nil {
+				log.Errorf("pod not found: %v", err)
+				return err
+			}
+			for event := range w.ResultChan() {
+				log.Info("waiting for pod up and running")
+				if end < int(time.Now().Unix()) {
+					w.Stop()
+					break
+				}
+				pod, ok := event.Object.(*coreV1.Pod)
+				if !ok {
+					continue
+				}
+				if event.Type == watch.Modified {
+					if pod.Status.Phase == coreV1.PodRunning {
+						for _, condition := range pod.Status.Conditions {
+							if condition.Type == coreV1.ContainersReady && condition.Status == coreV1.ConditionTrue {
+								experimentsDetails.ChaosDuration = end - int(time.Now().Unix())
+								log.Infof("still got %v seconds to go, run again", experimentsDetails.ChaosDuration)
+								w.Stop()
+								return preparePodNetworkChaos(experimentsDetails, clients, eventsDetails, chaosDetails, resultDetails)
+							}
+						}
+					}
+				}
+			}
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
 
 	log.Info("[Chaos]: Stopping the experiment")
 
@@ -194,6 +240,11 @@ func killnetem(PID int, networkInterface string) error {
 	}
 
 	return nil
+}
+
+func checkContainer(PID int) error {
+	_, err := exec.Command("nsenter", "-t", fmt.Sprintf("%d", PID), "-a", "--", "echo", "test").CombinedOutput()
+	return err
 }
 
 // getENV fetches all the env variables from the runner pod
