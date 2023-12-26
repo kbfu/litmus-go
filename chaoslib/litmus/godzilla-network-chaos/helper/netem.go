@@ -133,6 +133,15 @@ func injectChaos(experimentDetails *experimentTypes.ExperimentDetails, pid int) 
 	case "network-corruption":
 		baseCmd = fmt.Sprintf("tcset %s --corrupt %s%% --add",
 			experimentDetails.NetworkInterface, experimentDetails.NetworkCorruptionRate)
+	case "network-loss":
+		baseCmd = fmt.Sprintf("tcset %s --loss %s%% --add",
+			experimentDetails.NetworkInterface, experimentDetails.NetworkLossRate)
+	case "network-duplicate":
+		baseCmd = fmt.Sprintf("tcset %s --duplicate %s%% --add",
+			experimentDetails.NetworkInterface, experimentDetails.NetworkDuplicateRate)
+	case "network-reorder":
+		baseCmd = fmt.Sprintf("tcset %s --reorder %s%% --add",
+			experimentDetails.NetworkInterface, experimentDetails.NetworkReorderRate)
 	}
 	// source
 	for _, sport := range sPorts {
@@ -210,6 +219,9 @@ func getENV(experimentDetails *experimentTypes.ExperimentDetails) {
 	experimentDetails.Jitter, _ = strconv.Atoi(types.Getenv("JITTER", ""))
 	experimentDetails.NetworkLatency, _ = strconv.Atoi(types.Getenv("NETWORK_LATENCY", ""))
 	experimentDetails.NetworkCorruptionRate = types.Getenv("NETWORK_CORRUPTION_RATE", "")
+	experimentDetails.NetworkLossRate = types.Getenv("NETWORK_LOSS_RATE", "")
+	experimentDetails.NetworkDuplicateRate = types.Getenv("NETWORK_DUPLICATE_RATE", "")
+	experimentDetails.NetworkReorderRate = types.Getenv("NETWORK_REORDER_RATE", "")
 
 	destIps = getDestinationIPs(experimentDetails.DestinationIPs)
 	if strings.TrimSpace(experimentDetails.DestinationPorts) != "" {
