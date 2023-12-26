@@ -122,44 +122,49 @@ func preparePodNetworkChaos(experimentsDetails *experimentTypes.ExperimentDetail
 // it is using nsenter command to enter into network namespace of target container
 // and execute the netem command inside it.
 func injectChaos(experimentDetails *experimentTypes.ExperimentDetails, pid int) error {
+	var (
+		cmds    []string
+		baseCmd string = ""
+	)
 	switch experimentDetails.StressType {
 	case "network-delay":
-		var cmds []string
-		// source
-		for _, sport := range sPorts {
-			cmds = append(cmds, fmt.Sprintf("tcset %s --delay %d --src-port %s --delay-distro %d --add",
-				experimentDetails.NetworkInterface, experimentDetails.NetworkLatency, sport, experimentDetails.Jitter))
-		}
-		// destination
-		baseCmd := fmt.Sprintf("tcset %s --delay %d --delay-distro %d --add",
+		baseCmd = fmt.Sprintf("tcset %s --delay %d --delay-distro %d --add",
 			experimentDetails.NetworkInterface, experimentDetails.NetworkLatency, experimentDetails.Jitter)
-		for _, dip := range destIps {
-			tcsetCmd := baseCmd + fmt.Sprintf(" --network %s", dip)
-			for _, dport := range dPorts {
-				tcsetCmd += fmt.Sprintf(" --port %s", dport)
-				cmds = append(cmds, tcsetCmd)
-			}
+	case "network-corruption":
+		baseCmd = fmt.Sprintf("tcset %s --corrupt %s%% --add",
+			experimentDetails.NetworkInterface, experimentDetails.NetworkCorruptionRate)
+	}
+	// source
+	for _, sport := range sPorts {
+		cmds = append(cmds, fmt.Sprintf("%s --src-port %s", baseCmd, sport))
+	}
+	// destination
+	for _, dip := range destIps {
+		tcsetCmd := baseCmd + fmt.Sprintf(" --network %s", dip)
+		for _, dport := range dPorts {
+			tcsetCmd += fmt.Sprintf(" --port %s", dport)
+			cmds = append(cmds, tcsetCmd)
 		}
-		if len(destIps) == 0 {
-			for _, dport := range dPorts {
-				tcsetCmd := baseCmd + fmt.Sprintf(" --port %s", dport)
-				cmds = append(cmds, tcsetCmd)
-			}
+	}
+	if len(destIps) == 0 {
+		for _, dport := range dPorts {
+			tcsetCmd := baseCmd + fmt.Sprintf(" --port %s", dport)
+			cmds = append(cmds, tcsetCmd)
 		}
-		// show some message
-		if len(cmds) == 0 {
-			logrus.Infof("nothing will be executed")
-		}
-		for _, cmd := range cmds {
-			logrus.Infof("executing command nsenter -t %d -n -- sh -c %s", pid, cmd)
-			output, err := exec.Command("nsenter", "-t", fmt.Sprintf("%d", pid), "-n", "--", "sh", "-c",
-				cmd).CombinedOutput()
-			if err != nil {
-				logrus.Error(string(output))
-				return err
-			}
-		}
+	}
 
+	// show some message
+	if len(cmds) == 0 {
+		logrus.Infof("nothing will be executed")
+	}
+	for _, cmd := range cmds {
+		logrus.Infof("executing command nsenter -t %d -n -- sh -c %s", pid, cmd)
+		output, err := exec.Command("nsenter", "-t", fmt.Sprintf("%d", pid), "-n", "--", "sh", "-c",
+			cmd).CombinedOutput()
+		if err != nil {
+			logrus.Error(string(output))
+			return err
+		}
 	}
 	return nil
 }
@@ -204,6 +209,7 @@ func getENV(experimentDetails *experimentTypes.ExperimentDetails) {
 	experimentDetails.StressType = types.Getenv("STRESS_TYPE", "")
 	experimentDetails.Jitter, _ = strconv.Atoi(types.Getenv("JITTER", ""))
 	experimentDetails.NetworkLatency, _ = strconv.Atoi(types.Getenv("NETWORK_LATENCY", ""))
+	experimentDetails.NetworkCorruptionRate = types.Getenv("NETWORK_CORRUPTION_RATE", "")
 
 	destIps = getDestinationIPs(experimentDetails.DestinationIPs)
 	if strings.TrimSpace(experimentDetails.DestinationPorts) != "" {

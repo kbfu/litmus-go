@@ -47,4 +47,5 @@ type ExperimentDetails struct {
 	SourcePorts                        string
 	DestinationPorts                   string
 	StressType                         string
+	NetworkCorruptionRate              string
 }
