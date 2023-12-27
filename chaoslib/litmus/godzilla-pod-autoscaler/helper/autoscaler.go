@@ -2,7 +2,7 @@ package helper
 
 import (
 	"context"
-	clients "github.com/litmuschaos/litmus-go/pkg/clients"
+	"github.com/litmuschaos/litmus-go/pkg/clients"
 	experimentTypes "github.com/litmuschaos/litmus-go/pkg/generic/godzilla-autoscaler/types"
 	"github.com/litmuschaos/litmus-go/pkg/log"
 	"github.com/sirupsen/logrus"
@@ -43,7 +43,7 @@ func Helper(clients clients.ClientSets) { // abort channel is used to transmit s
 
 func scaleDeployment(experimentDetails experimentTypes.ExperimentDetails, client *kubernetes.Clientset) error {
 	var originalNumber int32 = -1
-	after := time.After(time.Duration(experimentDetails.Duration))
+	after := time.After(time.Duration(experimentDetails.Duration) * time.Second)
 out:
 	for {
 		select {
@@ -102,7 +102,7 @@ out:
 
 func scaleStatefulset(experimentDetails experimentTypes.ExperimentDetails, client *kubernetes.Clientset) error {
 	var originalNumber int32 = -1
-	after := time.After(time.Duration(experimentDetails.Duration))
+	after := time.After(time.Duration(experimentDetails.Duration) * time.Second)
 out:
 	for {
 		select {
