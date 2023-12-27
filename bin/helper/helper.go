@@ -14,6 +14,7 @@ import (
 	containerKill "github.com/litmuschaos/litmus-go/chaoslib/litmus/container-kill/helper"
 	diskFill "github.com/litmuschaos/litmus-go/chaoslib/litmus/disk-fill/helper"
 	godzillaNetworkChaos "github.com/litmuschaos/litmus-go/chaoslib/litmus/godzilla-network-chaos/helper"
+	godzillaPodAutoscaler "github.com/litmuschaos/litmus-go/chaoslib/litmus/godzilla-pod-autoscaler/helper"
 	httpChaos "github.com/litmuschaos/litmus-go/chaoslib/litmus/http-chaos/helper"
 	networkChaos "github.com/litmuschaos/litmus-go/chaoslib/litmus/network-chaos/helper"
 	dnsChaos "github.com/litmuschaos/litmus-go/chaoslib/litmus/pod-dns-chaos/helper"
@@ -62,6 +63,8 @@ func main() {
 		networkChaos.Helper(clients)
 	case "godzilla-network-chaos":
 		godzillaNetworkChaos.Helper(clients)
+	case "godzilla-pod-autoscaler":
+		godzillaPodAutoscaler.Helper(clients)
 	case "http-chaos":
 		httpChaos.Helper(clients)
 
