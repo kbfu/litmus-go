@@ -6,6 +6,8 @@ import (
 
 // ExperimentDetails is for collecting all the experiment-related details
 type ExperimentDetails struct {
+	ContainerRuntime              string
+	SocketPath                    string
 	ExperimentName                string
 	EngineName                    string
 	ChaosDuration                 int
@@ -37,4 +39,6 @@ type ExperimentDetails struct {
 	NodeLabel                     string
 	IsTargetContainerProvided     bool
 	SetHelperData                 string
+	FillPath                      string
+	FileSize                      string
 }

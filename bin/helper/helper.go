@@ -13,6 +13,7 @@ import (
 
 	containerKill "github.com/litmuschaos/litmus-go/chaoslib/litmus/container-kill/helper"
 	diskFill "github.com/litmuschaos/litmus-go/chaoslib/litmus/disk-fill/helper"
+	godzillaDiskFill "github.com/litmuschaos/litmus-go/chaoslib/litmus/godzilla-disk-fill/helper"
 	godzillaNetworkChaos "github.com/litmuschaos/litmus-go/chaoslib/litmus/godzilla-network-chaos/helper"
 	godzillaPodAutoscaler "github.com/litmuschaos/litmus-go/chaoslib/litmus/godzilla-pod-autoscaler/helper"
 	httpChaos "github.com/litmuschaos/litmus-go/chaoslib/litmus/http-chaos/helper"
@@ -55,6 +56,8 @@ func main() {
 		containerKill.Helper(clients)
 	case "disk-fill":
 		diskFill.Helper(clients)
+	case "godzilla-disk-fill":
+		godzillaDiskFill.Helper(clients)
 	case "dns-chaos":
 		dnsChaos.Helper(clients)
 	case "stress-chaos":
